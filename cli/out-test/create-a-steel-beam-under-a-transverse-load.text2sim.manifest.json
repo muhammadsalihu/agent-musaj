@@ -1,0 +1,81 @@
+{
+  "request": {
+    "prompt": "Create a steel beam under a transverse load",
+    "title": "Create a steel beam under a transverse load",
+    "physics": "structural",
+    "geometryKind": "beam",
+    "geometryDescription": "Create a steel beam under a transverse load",
+    "notes": [],
+    "confidence": 0.83
+  },
+  "geometry": {
+    "name": "create-a-steel-beam-under-a-transverse-load",
+    "kind": "beam",
+    "dimension": 3,
+    "primitives": [
+      {
+        "kind": "beam",
+        "label": "beam",
+        "dimensions": {
+          "length": 10,
+          "webThickness": 1,
+          "flangeThickness": 0.5
+        }
+      }
+    ],
+    "dimensions": {
+      "length": 10,
+      "webThickness": 1,
+      "flangeThickness": 0.5
+    },
+    "boundaryLabels": [
+      "fixed",
+      "load"
+    ],
+    "allowMultipleBodies": false,
+    "notes": []
+  },
+  "mesh": {
+    "characteristicLength": 1,
+    "refinementLevel": 1,
+    "order": 1,
+    "maxElementSize": 1.5,
+    "minElementSize": 0.5
+  },
+  "solver": {
+    "solver": "elmer",
+    "physics": "structural",
+    "equations": [
+      "Linear Elasticity"
+    ],
+    "materials": [
+      {
+        "name": "Steel",
+        "properties": {
+          "Density": 7850,
+          "YoungsModulus": 210000000000,
+          "PoissonRatio": 0.3
+        }
+      }
+    ],
+    "boundaryConditions": [
+      {
+        "name": "Fixed support",
+        "type": "fixed",
+        "target": "fixed"
+      },
+      {
+        "name": "Applied load",
+        "type": "force",
+        "target": "load",
+        "value": "1e3"
+      }
+    ],
+    "iterations": 25
+  },
+  "validation": {
+    "valid": true,
+    "issues": [],
+    "summary": "Plan is valid."
+  }
+}

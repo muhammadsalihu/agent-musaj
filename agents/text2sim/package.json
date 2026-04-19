@@ -1,0 +1,17 @@
+{
+  "name": "@agent-musaj/text2sim",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@agent-musaj/core": "file:../../core",
+    "@agent-musaj/elmer-generator": "file:../../packages/elmer-generator",
+    "@agent-musaj/gmsh-generator": "file:../../packages/gmsh-generator",
+    "@agent-musaj/simulation-validator": "file:../../packages/simulation-validator"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsx --test src/**/*.test.ts",
+    "check": "tsc -p tsconfig.json --noEmit"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "solver": {
+    "solver": "elmer",
+    "physics": "structural",
+    "equations": [
+      "Linear Elasticity"
+    ],
+    "materials": [
+      {
+        "name": "Steel",
+        "properties": {
+          "Density": 7850,
+          "YoungsModulus": 210000000000,
+          "PoissonRatio": 0.3
+        }
+      }
+    ],
+    "boundaryConditions": [
+      {
+        "name": "Fixed support",
+        "type": "fixed",
+        "target": "fixed"
+      },
+      {
+        "name": "Applied load",
+        "type": "force",
+        "target": "load",
+        "value": "1e3"
+      }
+    ],
+    "iterations": 25
+  },
+  "commands": [
+    "ElmerGrid 14 2 model.msh -autoclean",
+    "ElmerSolver simulation.sif"
+  ]
+}

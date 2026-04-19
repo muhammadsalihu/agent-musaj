@@ -1,0 +1,50 @@
+Header
+  CHECK KEYWORDS Warn
+  Mesh DB "." "model"
+End
+
+Simulation
+  Coordinate System = Cartesian 3
+  Max Output Level = 10
+End
+
+Constants
+  Gravity = 0 0 -9.81
+End
+
+Material 1
+  Name = "Steel"
+  Density = 7850
+  YoungsModulus = 210000000000
+  PoissonRatio = 0.3
+End
+
+Equation 1
+  Name = "structural Equation"
+  Active Solvers(1) = 1
+End
+
+Solver 1
+  Equation = "structural"
+  Procedure = "ElmerSolver" "ElmerSolver"
+End
+
+Boundary Condition 1
+  Name = "Fixed support"
+  Target = "fixed"
+  Type = "fixed"
+End
+
+Boundary Condition 2
+  Name = "Applied load"
+  Target = "load"
+  Type = "force"
+  Value = 1e3
+End
+
+Body 1
+  Target Bodies = 1
+  Name = "MainBody"
+  Equation = 1
+  Material = 1
+End

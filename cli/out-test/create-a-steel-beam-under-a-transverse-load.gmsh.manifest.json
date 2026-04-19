@@ -1,0 +1,12 @@
+{
+  "geometry": "create-a-steel-beam-under-a-transverse-load",
+  "dimension": 3,
+  "command": "gmsh create-a-steel-beam-under-a-transverse-load.geo -3 -format msh2 -o create-a-steel-beam-under-a-transverse-load.msh",
+  "mesh": {
+    "characteristicLength": 1,
+    "refinementLevel": 1,
+    "order": 1,
+    "maxElementSize": 1.5,
+    "minElementSize": 0.5
+  }
+}

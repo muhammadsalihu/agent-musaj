@@ -1,0 +1,28 @@
+{
+  "name": "agent-musaj",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "core",
+    "agents/*",
+    "packages/*",
+    "cli",
+    "web"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev:cli": "tsx cli/src/index.ts",
+    "dev:web": "npm run dev -w web",
+    "check": "npm run check --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.6",
+    "@vitejs/plugin-react": "^4.4.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vite": "^6.2.5"
+  }
+}

@@ -1,26 +1,26 @@
 # 🤖 Musaj - Coordinator Agent for Multiphysics Simulation
 
-> **Automating Multiphysics Simulations: From Text to CAD to Simulation**
+> **Automating Multiphysics Simulations: From Text to Gmsh to Elmer**
 
-Musaj is an intelligent coordinator agent that orchestrates the entire workflow of converting natural language descriptions into CAD models and executing multiphysics simulations. Built for the **JS AI Hackathon Buildathon**, this project demonstrates how AI can streamline complex engineering workflows.
+Musaj is an intelligent coordinator agent that orchestrates the workflow from natural-language simulation requests to generated geometry, mesh, and solver artifacts. Built for the **JS AI Hackathon Buildathon**, the current scaffold focuses on a reliable **text2sim** pipeline backed by Gmsh and Elmer.
 
 ## 🎯 Project Overview
 
 Musaj leverages advanced AI and automation to transform the traditional multiphysics simulation process:
 
 - **Input**: Natural language descriptions of physical problems
-- **Process**: Automated CAD model generation and simulation setup
-- **Output**: Complete multiphysics simulation results
+- **Process**: Automated geometry planning, mesh generation, and solver setup
+- **Output**: Gmsh geometry scripts, Elmer solver files, and run manifests
 
 This tool significantly reduces the time and complexity required to set up and execute sophisticated engineering simulations.
 
 ## ✨ Key Features
 
-- **Text-to-CAD Conversion**: Automatically generate CAD models from textual descriptions
-- **Intelligent Orchestration**: Coordinate multiple simulation tools and workflows
-- **Multiphysics Support**: Handle complex coupled physics problems
-- **AI-Powered**: Leverages state-of-the-art language models for understanding and generation
-- **Extensible Architecture**: Easy to integrate with various CAD and simulation tools
+- **Text-to-Simulation Conversion**: Convert natural language into simulation-ready artifacts
+- **Intelligent Orchestration**: Coordinate parsing, validation, and generation steps
+- **Multiphysics Support**: Start with structural, thermal, fluid, and electrostatic templates
+- **AI-Powered**: Keep an integration point for OpenAI-backed planning
+- **Extensible Architecture**: Add CAD adapters later without changing the core workflow
 
 ## 🏗️ Architecture
 
@@ -48,16 +48,19 @@ User Input (Natural Language)
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/muhammadsalihu/agent-musaj.git
-cd agent-musaj
-
 # Install dependencies
 npm install
-pip install -r requirements.txt
 
-# Configure environment variables
-cp .env.example .env
+# Run checks
+npm test
+npm run check
+npm run build
+
+# Launch the CLI scaffold
+npm run dev:cli -- "Create a steel beam under a transverse load" out
+
+# Launch the web demo
+npm run dev:web
 ```
 
 ### Quick Start
@@ -91,14 +94,14 @@ npm run serve
 
 ## 🔧 Configuration
 
-Configure Musaj by editing the `config.json` file:
+The current scaffold is configured through the workspace packages and CLI prompt input. A future config file can add:
 
 ```json
 {
-  "cad_engine": "FreeCAD",
-  "simulation_tool": "OpenFOAM",
-  "ai_model": "gpt-4",
-  "output_format": "step"
+  "geometry_engine": "Gmsh",
+  "solver_engine": "Elmer",
+  "ai_model": "OpenAI",
+  "output_format": "geo+sif"
 }
 ```
 
@@ -106,25 +109,26 @@ Configure Musaj by editing the `config.json` file:
 
 ```
 agent-musaj/
-├── src/
-│   ├── core/           # Core coordinator logic
-│   ├── cad/            # CAD generation modules
-│   ├── simulation/     # Simulation orchestration
-│   └── ai/             # AI/LLM integration
-├── tests/              # Test suites
-├── docs/               # Documentation
-├── config.json         # Configuration file
-└── README.md           # This file
+├── core/               # Shared types and orchestration contracts
+├── agents/
+│   └── text2sim/       # Prompt parsing and simulation planning
+├── packages/
+│   ├── gmsh-generator/ # Gmsh geometry and mesh artifacts
+│   ├── elmer-generator/# Elmer solver artifacts
+│   └── simulation-validator/
+├── cli/                # CLI runner
+├── web/                # Minimal React demo
+└── README.md
 ```
 
 ## 🔬 Technical Stack
 
-- **Frontend**: React, TypeScript
-- **Backend**: Node.js, Express
-- **AI/ML**: LangChain, OpenAI API
-- **CAD**: FreeCAD Python API, CadQuery
-- **Simulation**: OpenFOAM, SALOME
-- **Database**: MongoDB
+- **Frontend**: React, TypeScript, Vite
+- **CLI/Runtime**: Node.js, TypeScript
+- **AI/ML**: OpenAI API integration point
+- **Geometry/Mesh**: Gmsh
+- **Simulation**: Elmer
+- **Validation**: Custom simulation plan checks
 
 ## 🤝 Contributing
 
@@ -159,5 +163,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Last Updated**: 2026-03-31 23:07:36
-**Status**: 🚧 Under Active Development
+**Last Updated**: 2026-04-19
+**Status**: 🚧 Scaffold implemented

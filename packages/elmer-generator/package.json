@@ -1,0 +1,14 @@
+{
+  "name": "@agent-musaj/elmer-generator",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@agent-musaj/core": "file:../../core"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsx --test src/**/*.test.ts",
+    "check": "tsc -p tsconfig.json --noEmit"
+  }
+}

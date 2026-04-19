@@ -1,0 +1,639 @@
+The Power of Small LLMs in Geometry GeneraƟon for Physical 
+SimulaƟons.  
+Ossama Shaﬁq*, Bahman Ghiassi* and Alessio Alexiadis*, 
+*Correspondence: Ossama Shaﬁq (oxs391@student.bham.ac.uk), Bahman Ghiassi (b.ghiassi@bham.ac.uk) and 
+Alessio Alexiadis (a.alexiadis@bham.ac.uk) 
+ 
+Abstract 
+Engineers widely rely on simulaƟon plaƞorms like COMSOL or ANSYS to model and opƟmise 
+processes. However, seƫ ng up such simulaƟons requires experƟse in deﬁning geometry, generaƟng 
+meshes, establishing boundary condiƟons, and conﬁguring solvers. This research aims to simplify this 
+process by enabling engineers to describe their setup in plain language, allowing a Large Language 
+Model (LLM) to generate the necessary input ﬁles for their speciﬁc applicaƟon. This highly novel 
+approach allows establishing a direct link between natural language and complex engineering tasks. 
+Building on previous work that evaluated various LLMs for generaƟng input ﬁles across simple and 
+complex geometries, this study demonstrates that small LLMs— speciﬁcally, Phi-3 Mini and Qwen-
+2.5 1.5B—can be ﬁne-tuned to generate precise engineering geometries in GMSH format. Through 
+Low-Rank AdaptaƟon (LoRA), we curated a dataset of 480 instrucƟon–output pairs encompassing 
+simple shapes (squares, rectangles, circles, and half circles) and more complex structures (I-beams, 
+cylindrical pipes, and bent pipes). The ﬁne-tuned models produced high-ﬁdelity outputs, handling 
+rouƟne geometry generaƟon with minimal intervenƟon. While challenges remain with geometries 
+involving combinaƟons of mulƟple bodies, this study demonstrates that ﬁne-tuned small models can 
+outperform larger models like GPT-4o in specialised tasks, oﬀering a precise and resource-eﬃcient 
+alternaƟve for engineering applicaƟons. 
+ 
+1. IntroducƟon 
+Engineers across industries rely heavily on simulaƟon plaƞorms like COMSOL (COMSOL AB, 2024) 
+and ANSYS (ANSYS, 2024) to model and opƟmise complex processes. However, seƫ ng up these 
+simulaƟons presents a signiﬁcant barrier – engineers must manually create precise input ﬁles 
+deﬁning geometries, meshes, boundary condiƟons, and solver conﬁguraƟons, or rely on graphical 
+user interfaces (GUIs) which are not always available especially in open-source mulƟ-physics 
+simulaƟons tools. This process is Ɵme-consuming, requires specialised experƟse, and is prone to 
+errors.  
+The automaƟon of geometry generaƟon, in parƟcular, represents a crucial step toward making 
+simulaƟon tools more accessible to a broader engineering audience, allowing them to focus more on 
+interpreƟng results rather than conﬁguring simulaƟons.  In educaƟonal seƫ ngs, automaƟon helps 
+lower technical barriers that oŌen discourage students from engaging with simulaƟon tools. When 
+students do not have to wrestle with the intricate details of input ﬁle creaƟon and geometry setup, 
+they can devote more cogniƟve resources to understanding the underlying engineering principles. 
+This reducƟon in extraneous cogniƟve load is consistent with cogniƟve load theory, which posits that 
+learning is opƟmised when unnecessary processing is minimised (Sweller et al., 2019).As a result, 
+educators can design more eﬀecƟve instrucƟonal experiences that emphasise conceptual 
+understanding and analyƟcal skills over the mechanics of simulaƟon conﬁguraƟon. 
+For computaƟonal research speciﬁcally, it is observed that automaƟon of model generaƟon 
+accelerated iteraƟve design processes, allowing researchers to explore larger parameter spaces and 
+achieve more robust conclusions(Carta, 2020). AddiƟonally, research highlights that language-model-
+driven automaƟons in engineering educaƟon remove technical gatekeeping that historically 
+disadvantaged students from non-tradiƟonal backgrounds, making advanced simulaƟon techniques 
+more accessible across diverse student populaƟons (Filippi and Motyl, 2024). 
+Large Language Models (LLMs) have demonstrated remarkable capabiliƟes in translaƟng natural 
+language descripƟons into structured outputs, suggesƟng their potenƟal to bridge this gap between 
+human intent and technical implementaƟon. Recent studies have shown promising results in 
+applying LLMs to engineering tasks, from code generaƟon to computer-aided design (CAD) (Filippi 
+and Motyl, 2024b; Zhong et al., 2023). These applicaƟons leverage several key concepts, including 
+prompt engineering and model-driven engineering (MDE). Prompt engineering enables few-shot 
+learning, allowing models to generalise eﬀecƟvely from limited examples (Gu et al., 2022; Brown et 
+al., 2020), while MDE principles help bridge the gap between high-level speciﬁcaƟons and pracƟcal 
+implementaƟons (Gaydamaka, 2019; Buƫ ng et al., 2020). 
+However, applying general-purpose LLMs to specialised engineering tasks presents signiﬁcant 
+challenges, parƟcularly when generaƟng code for specialised tools like GMSH (Geuzaine and 
+Remacle, 2009), an open-source ﬁnite element mesh generator that provides a scripƟng interface for 
+creaƟng complex engineering geometries (Rios et al., 2023). Our previous work revealed that 
+without domain-speciﬁc training, even large LLMs struggle to consistently generate precise 
+geometric shapes that adhere to engineering standards like GMSH syntax (Alexiadis and Ghiassi, 
+2024, Shaﬁq et al., 2025). These models oŌen produce outputs that fail to meet the nuanced 
+requirements of engineering design (Hu et al., 2021; Han et al., 2024). While some researchers have 
+explored ﬁne-tuning LLMs for CAD tasks (Sanghi et al., 2023; Wu et al., 2023), the focus has primarily 
+been on larger models, which require substanƟal computaƟonal resources. 
+This study builds on our previous ﬁndings by invesƟgaƟng an alternaƟve approach: the systemaƟc 
+ﬁne-tuning of small LLMs—speciﬁcally Phi-3 Mini and Qwen-2.5 1.5B—for engineering geometry 
+generaƟon. Smaller models are criƟcal for pracƟcal deployment in engineering contexts, as they 
+require signiﬁcantly fewer computaƟons resources while potenƟal oﬀering faster inference Ɵmes and 
+easier integraƟon into exisƟng workﬂows. Our hypothesis is that these smaller models, when 
+properly adapted using targeted datasets and training techniques, can match or exceed the 
+performance of larger generalist models while being more accessible and eﬃcient. Through careful 
+dataset curaƟon and specialised ﬁne-tuning methods, we aim to enhance these models' ability to 
+generate precise GMSH-compliant geometries from natural language descripƟons. While our primary 
+geometries involving a single body, we also examine the models' capabiliƟes in handling geometries 
+involving combinaƟons of mulƟple bodies within a single prompt—a scenario that tests the limits of 
+their contextual understanding. 
+In this paper, we ﬁrst detail our approach to dataset creaƟon and model ﬁne-tuning, describing the 
+techniques that enable small LLMs to generate precise engineering geometries. We then present 
+comprehensive results that demonstrate these models' capabiliƟes across a range of geometry types, 
+from simple shapes to complex structures. Our analysis explores both the successes and limitaƟons 
+of small LLMs in this domain, leading to insights about their pracƟcal implementaƟon in engineering 
+workﬂows. We conclude by examining the broader implicaƟons of our ﬁndings for the future of 
+automated engineering design and simulaƟon setup. 
+2. Previous Work 
+2.1 Eﬃcient LLM AdaptaƟon Techniques 
+Recent research has demonstrated that language models can be eﬀecƟvely ﬁne-tuned for specialised 
+engineering tasks. Parameter-eﬃcient ﬁne-tuning methods such as Low-Rank AdaptaƟon (LoRA) (Hu 
+et al., 2021) have emerged as pracƟcal approaches for adapƟng pre-trained models to domain-
+speciﬁc applicaƟons without the computaƟonal burden of full ﬁne-tuning. These techniques modify 
+only a small subset of model parameters while preserving most of the pre-trained weights, 
+eﬀecƟvely miƟgaƟng the problem of catastrophic forgeƫ ng where models lose their general 
+capabiliƟes when adapted to new tasks.  
+For resource-constrained applicaƟons, DeƩmers et al. (2023) introduced QLoRA, which combines 4-
+bit quanƟsaƟon with LoRA to dramaƟcally reduce memory requirements during ﬁne-tuning. This 
+approach is parƟcularly relevant for our work as it enables adaptaƟon of small models like Qwen-2.5 
+14B to specialised tasks such as engineering geometry generaƟon, making deployment feasible in 
+typical engineering compuƟng environments.  
+2.2 LLMs in Engineering ApplicaƟons 
+The applicaƟon of LLMs to engineering workﬂows represents an emerging ﬁeld with signiﬁcant 
+potenƟal. Alexiadis and Ghiassi (2024) demonstrated a method for integraƟng LLMs with 
+geometry/mesh generaƟon soŌware and mulƟphysics solvers, allowing users to describe simulaƟons 
+in natural language. Their work established the feasibility of using LLMs for engineering simulaƟon 
+setup, but primarily relied on larger models through API access, which presents limitaƟons for 
+widespread adopƟon in engineering pracƟce.  
+Building on this, Shaﬁq et al. (2025) explored the capabiliƟes of various LLMs speciﬁcally for 
+generaƟng GMSH geometry code from natural language descripƟons. Their research idenƟﬁed 
+signiﬁcant gaps in the performance of even state-of-the art models when handling complex 
+engineering geometries, highlighƟng the need for domain-speciﬁc adaptaƟon. Similar eﬀorts include 
+FLUID-GPT (Yang et al., 2023) for parƟcle trajectory predicƟon and MyCrunchGPT (Kumar et al., 
+2023) for scienƟﬁc machine learning applicaƟons, further demonstraƟng the growing interest in 
+applying LLMs to specialised engineering tasks. 
+2.3 CAD and Geometry GeneraƟon 
+The automaƟon of CAD (Computer Aided Design) and geometry generaƟon for engineering 
+simulaƟons presents unique challenges disƟnct from general CAD automaƟon. While there has been 
+progress in natural language interfaces for CAD systems, such as Alrashedy et al.’s (2024) work with 
+AutoCAD, these approaches typically focus on the broader design process rather than the speciﬁc 
+requirements of simulaƟon-ready geometry formats like GMSH.  
+Wu et al. (2021) demonstrated with DeepCAD that treaƟng CAD operaƟons as sequenƟal commands 
+can enable automated geometry generaƟon, though their approach used specialised neural 
+networks rather than adapƟng general-purpose LLMs. This disƟncƟon is crucial, as engineering 
+simulaƟon workﬂows oŌen require both natural language understanding and precise adherence to 
+domain-speciﬁc syntax, a combinaƟon that general CAD automaƟon approaches have not fully 
+addressed. 
+2.4 Current Challenges and Research Gaps 
+While general-purpose LLMs show promise in understanding engineering concepts, they oŌen fail to 
+produce the precise, syntacƟcally correct geometry deﬁniƟons required by simulaƟon tools like 
+GMSH.  
+Current approaches typically rely on large models that require signiﬁcant computaƟonal resources, 
+limiƟng their pracƟcal deployment in rouƟne engineering workﬂows. There is a clear need for more 
+eﬃcient soluƟons that maintain high performance while reducing resource requirements. 
+Most exisƟng soluƟons address either geometry generaƟon or simulaƟon setup in isolaƟon, creaƟng 
+a disconnect that requires manual intervenƟon. An integrated approach that can reliably generate 
+simulaƟon-ready geometry code from natural language would signiﬁcantly streamline engineering 
+workﬂows. 
+Our work directly addresses these gaps by ﬁne-tuning small, eﬃcient LLMs speciﬁcally for 
+engineering geometry generaƟon in GMSH format. By focusing on this specialised task and 
+employing parameter-eﬃcient techniques, we demonstrate that properly adapted smaller models 
+can provide the precision required for engineering applicaƟons while being more accessible for 
+rouƟne use. 
+3. Methodology 
+Our research methodology followed a systemaƟc ﬁve-phase approach to evaluate and enhance LLM 
+performance in engineering geometry generaƟon.  
+1. Conducted baseline tesƟng of selected models to establish performance benchmarks. This 
+involved evaluaƟng three small LLMs (Phi-3 Mini (Abdin et al., 2024), Qwen-2.5 1.5B, and 
+Qwen-2.5 14B (Qwen Team, 2025)) and comparing their capabiliƟes with GPT-4o (Open AI, 
+2024), a larger model, in generaƟng basic GMSH-compliant geometries.  
+2. Developing a specialised dataset for training by creaƟng automated scripts to generate 
+instrucƟon-output pairs, implemenƟng validaƟon protocols to ensure geometric accuracy 
+and GMSH compliance.  
+3. ImplemenƟng ﬁne-tuning procedures using LoRA adaptaƟon techniques to Phi-3 Mini and 
+Qwen-2.5 1.5B, and QLoRA for the larger Qwen-2.5 14B model to manage computaƟonal 
+resources. 
+4. Conducted comprehensive performance validaƟon across mulƟple dimensions, tesƟng 
+models on single-geometry generaƟon tasks and evaluaƟng both GMSH syntax compliance 
+and geometric accuracy. 
+5. Extended our invesƟgaƟon to more challenging scenarios through experiments involving 
+geometries with mulƟple bodies, comparing the capabiliƟes of both ﬁne-tuned and non-
+tuned models. 
+3.1 Model SelecƟon and Architecture 
+Our selection deliberately spans multiple architectural scales to investigate whether targeted fine-
+tuning of smaller models can match or exceed larger architectures in specialised engineering 
+domains (Table 1). 
+Table 1. Details on the architecture of the models selected.  
+ 
+ 
+3.2 Database Development 
+The dataset was designed to provide comprehensive coverage of geometry types while maintaining 
+equal representaƟon across parameter variaƟons to avoid biasing the model towards speciﬁc 
+conﬁguraƟons. To ensure systemaƟc coverage of the parameter space, the following methodologies 
+were implemented:  
+ Template variety and structure (Figure 1): We developed a set of 8 disƟnct instrucƟon 
+templates for each geometry type, varying in their structure and complexity. For example, 
+templates for circle generaƟon ranged from simple commands like "Create a gmsh script for 
+a circle with radius X" to more detailed speciﬁcaƟons like "Generate a gmsh script for a X unit 
+circle with mesh size Y ."  
+Figure 1. Example instrucƟon templates for circle geometry, showing variety in structure and 
+complexity. 
+
+ 
+ Parameter diversity controls (Figure 2): Rather than random parameter selecƟon, we 
+implemented controlled variaƟon of key geometric parameters. We evenly distributed 
+dimensions between integer and ﬂoaƟng-point values, balanced unit speciﬁcaƟons between 
+millimetres and cenƟmetres, and equally divided examples between explicit coordinate 
+posiƟoning and default posiƟoning at the origin. 
+ 
+ 
+Figure 2. Parameter diversity control implementaƟon showing distribuƟon of dimensional 
+parameters. 
+ 
+Quality control features (Figure 3): Each instrucƟon-output pair underwent a rigorous 
+validaƟon process consisƟng of: (a) GMSH syntax validaƟon to ensure the generated code 
+was executable, (b) geometric validaƟon to verify that the output code produced the 
+intended shape, and (c) parameter consistency checking to conﬁrm that all requested 
+parameters were correctly represented in the output code.  
+ 
+ 
+Figure 3. Quality control validaƟon funcƟon for checking GMSH syntax and geometric correctness. 
+ 
+We created a dataset of 480 instrucƟon output pairs (120 per geometry type) covering four 
+categories of geometries selected to represent increasing complexity in engineering applicaƟons.  
+ Basic shapes (squares/rectangles): Fundamental elements in structural and mechanical 
+engineering designs.  
+ Curved elements (circles/semi-circles): EssenƟal for modelling components with curved 
+surfaces. 
+ Structural components (I-beams): RepresentaƟve of complex engineering structures with 
+speciﬁc dimensional requirements. 
+ Advanced geometries (pipes/bent pipes): Complex 3D structures that require precise 
+parameterisaƟon.  
+For each geometry type, we developed Python scripts to automaƟcally generate diverse instrucƟon-
+output pairs The pairs were formaƩed in JSON structure to facilitate easy integraƟon with the ﬁne-
+tuning pipeline (Figure 4). These scripts systemaƟcally produced varied geometric conﬁguraƟons 
+according to our parameterisaƟon rules, enabling eﬃcient dataset creaƟon with comprehensive 
+parameter space coverage. We created mulƟple variaƟons of instrucƟons using diﬀerent phrasings 
+but requesƟng the same geometry, for example the same square geometry might be requested using 
+diﬀerent instrucƟon formats:  
+
+ InstrucƟon: A natural language descripƟon of the desired geometry (e.g., "Create a gmsh 
+script for a square with side length 10 units centred at the origin") 
+ Output: The corresponding GMSH geometry (.geo) ﬁle content that generates the speciﬁed 
+shape.  
+ 
+ 
+ 
+Figure 4. The instrucƟon-output pairs in JSON format for I-beam and circle, as an example 
+ 
+The automaƟon scripts incorporated parametric variaƟons to ensure diversity in the dataset (Table 
+2). 
+ 
+Table 2: Speciﬁc parameter ranges used in dataset generaƟon. 
+ 
+ 
+
+ 
+ 
+ 
+3.3 Fine-Tuning Procedure 
+We ﬁne-tuned three small language models—Phi-3 Mini, Qwen-2.5 1.5B, and Qwen-2.5 14B—
+speciﬁcally for the task of generaƟng GMSH-compliant geometry code from natural language 
+descripƟons (Appendix 1). The ﬁne-tuning process uƟlised Low-Rank AdaptaƟon (LoRA), a parameter-
+eﬃcient method that allows for model adaptaƟon while minimising computaƟonal requirements. 
+Hyperparameter OpƟmisaƟon 
+To determine opƟmal ﬁne-tuning conﬁguraƟons, we conducted a systemaƟc hyperparameter search 
+based on ranges commonly used in prior LoRA ﬁne-tuning studies (Hu et al., 2021; Menick et al., 
+2022; Han et al., 2024)- Table 3 summarises the hyperparameters tested and their raƟonale: 
+ 
+Table 3. Hyperparameter search space for ﬁne-tuning experiments. 
+ 
+For each hyperparameter conﬁguraƟon, we trained the models and evaluated their performance on 
+a validaƟon set containing examples of all geometry types. The evaluaƟon metrics included 
+successful code generaƟon rate, syntax correctness, and geometric accuracy. The opƟmal 
+conﬁguraƟons determined from this process were implemented for the ﬁnal model training, with 
+results presented in SecƟon 4.1. 
+For the smaller models, Phi-3 Mini and Qwen-2.5 1.5B, we implemented standard LoRA adaptaƟon 
+due to their manageable parameter counts. However, the larger Qwen-2.5 14B model required a 
+more memory-eﬃcient approach, for this model, we implemented 4-bit quanƟsaƟon through 
+
+QLoRA. While this introduces a methodological diﬀerence, QLoRA maintains performance nearly 
+idenƟcal to standard LoRA while signiﬁcantly reducing memory usage, with diﬀerences in task 
+performance typically less than 1% (DeƩmers et al., 2023).  
+Training Data PreparaƟon 
+The standardised prompt template format was applied at the ﬁne-tuning stage to prepare the data 
+into the required format ensuring consistent model input. Figure 5 demonstrates the template 
+structure for Phi-3-Mini, which uses special tokens to delimit instrucƟon and code secƟons. For the 
+Qwen-2.5 models (both 1.5B and 14B variants), we implemented a diﬀerent template structure as 
+shown in Figure 6, which uses the model's naƟve instrucƟon format and tokens to properly 
+encapsulate user requests and assistant responses.  
+ 
+ 
+ 
+ 
+Figure 5. Template format for Phi-3-Mini ﬁne-tuning with special tokens delimiƟng input and output 
+secƟons (Lightning AI, 2023).  
+ 
+ 
+ 
+ 
+Figure 6. Template format implementaƟon for Qwen-2.5 models showing the use of model-speciﬁc 
+instrucƟon tokens that diﬀer from those used with Phi-3-Mini (Lightning AI, 2023).  
+ 
+ImplementaƟon Environment 
+The ﬁne-tuning process was implemented using LitGPT (Lightning AI, 2023), a lightweight and 
+eﬃcient framework designed for training and ﬁne-tuning large language models. The LitGPT library 
+provided a streamlined interface for integraƟng LoRA and QLoRA, enabling rapid experimentaƟon 
+and opƟmisaƟon of hyperparameters. The process was executed on the Birmingham Environment for 
+Academic Research (BEAR) high-performance compuƟng cluster, uƟlising an NVIDIA A100 40GB GPU.  
+TesƟng and EvaluaƟon 
+AŌer the ﬁne-tuning process, a series of seven disƟnct prompts were applied to generate GMSH 
+scripts for a variety of geometries to test and evaluate the large language models (Figure 7). 
+
+ 
+ 
+ 
+ 
+ 
+ 
+Figure 7. Series of prompts for tesƟng and evaluaƟng LLMs.  
+Each output was validated for GMSH compaƟbility based on the following criteria to produce 
+geometry outputs as expected in Figure 8. 
+ 
+In addiƟon to evaluaƟng the performance on individual geometric shapes, we designed a series of 
+tests speciﬁcally to assess the models' capabiliƟes in handling geometries involving mulƟple bodies 
+within a single prompt. These mulƟ-body geometry tests were created to evaluate how well the 
+models could manage spaƟal relaƟonships and geometric interacƟons between diﬀerent shapes. The 
+mulƟ-body geometry prompts (Figure 9) included scenarios such as 'a circle inside a square' and 'a 
+circle next to a square,' requiring the models to correctly interpret relaƟve posiƟoning and generate 
+appropriate GMSH code that would produce the speciﬁed composite structures. 
+ 
+ 
+ 
+Table 4. EvaluaƟon criteria and scoring system for generated geometry code (Shaﬁq et al., 2025). 
+ 
+
+ 
+Figure 8. The expected visual representaƟon of the square (a), rectangle (b), circle (c), semi-circle (d), 
+I-beam (e), pipe (f) and bent pipe (g) geometries. 
+ 
+In addiƟonal experiments designed to evaluate the models’ performance on more complex tasks, we 
+prompted the models with a single input requesƟng mulƟple, disƟnct geometries simultaneously 
+(Figure 9). 
+ 
+Figure 9. Series of prompts for evaluaƟng the mulƟ-geometry capabiliƟes of LLMs.  
+4. Results & Analysis 
+4.1 Baseline Performance before Fine-Tuning 
+The iniƟal evaluaƟon of LLMs revealed signiﬁcant variaƟons in performance across diﬀerent model 
+sizes and architectures. The baseline assessment focused on four key criteria, as reﬂected in SecƟon 
+3.3, including shape accuracy, dimensional accuracy, parameter matching, and consistent units, with 
+scores ranging from 0 to 15 for each criterion (Table 5). 
+ 
+
+Table 5. Comprehensive table showing all scores across the seven geometries for four LLMs before 
+ﬁne tuning.  
+ 
+ 
+Small LLMs (Phi-3 Mini and Qwen-2.5 1.5B) 
+Both Phi-3 Mini and Qwen-2.5 1.5B demonstrated limited capabiliƟes in their baseline state, with 
+scores signiﬁcantly lower than GPT-4o, which achieved perfect scores (60/60) for basic geometries as 
+shown in Table 6. While GPT-4o exhibited strong performance even without ﬁne-tuning, small 
+models required signiﬁcant improvement to reach comparable accuracy levels. Phi-3 Mini achieved 
+its highest score with rectangles (40/60), but performed poorly across other geometries, scoring only 
+5/60 for most shapes. Qwen-2.5 1.5B showed slightly more consistent but sƟll limited performance, 
+with scores ranging from 5 to 15/60 across diﬀerent geometries. The models frequently produced 
+formaƫ ng and syntacƟcal errors in GMSH scripts, while struggling with accurate geometric 
+parameter deﬁniƟons. Their handling of mulƟple geometry requests was notably inconsistent, 
+indicaƟng fundamental limitaƟons in their baseline capabiliƟes. 
+Medium-Scale Model (Qwen-2.5 14B) 
+Qwen-2.5 14B demonstrated markedly improved baseline performance compared to its smaller 
+counterparts, parƟcularly with basic geometries, though sƟll below GPT-4o's capabiliƟes for most 
+geometries. While GPT-4o achieved perfect scores across basic shapes, Qwen-2.5 14B's strongest 
+performance (55/60) for squares and rectangles sƟll showed room for improvement, also showing 
+moderate capability with pipes and I-beams (30/60) (Figure 10). It maintained consistent 
+dimensional accuracy across most shapes, though it sƟll struggled with complex geometries, scoring 
+lower on circles (10/60). This performance suggested that increased model size contributed to beƩer 
+baseline handling of geometric tasks. 
+
+ 
+Figure 10. The visual representaƟon of the square (a), rectangle (b), I-beam (c) and bent pipe (d) 
+geometries before ﬁne tuning Qwen-2.5-14B. 
+ 
+Large-Scale Model (GPT-4o) 
+GPT-4o exhibited the strongest baseline performance among all tested models. It achieved perfect 
+scores (60/60) for basic geometries including squares, rectangles, and circles, along with high 
+performance on semi-circles (55/60). The model demonstrated strong consistency across all 
+evaluaƟon criteria, though it showed a notable weakness with bent pipes (25/60) (Figure 10). This 
+performance paƩern indicated that larger models possessed beƩer inherent capabiliƟes for handling 
+geometric tasks, even without specialised training. 
+ 
+ 
+Figure 11. The GMSH .geo script (a) and corresponding visual representaƟon (b) output for the bent 
+pipe from GPT-4o. 
+ 
+
+4.2 Hyperparameter OpƟmisaƟon  
+We conducted a systemaƟc hyperparameter search to evaluate various ﬁne-tuning conﬁguraƟons for 
+our models. Our invesƟgaƟon examined how diﬀerent LoRA conﬁguraƟons, training epochs, and 
+learning rates aﬀected model performance across all geometry types. Figures 12-14 present the 
+results of these experiments, which guided our parameter selecƟon for subsequent ﬁne-tuning. For 
+all models, these experiments helped us idenƟfy eﬀecƟve hyperparameter seƫ ngs within the ranges 
+invesƟgated. 
+Figure 12 shows how diﬀerent LoRA rank values aﬀected performance scores (measured on a scale 
+of 0-60) across geometry types. We tested ranks from 8 to 64 and selected a rank of 8 with an alpha 
+value of 16 based on the performance metrics observed within this range. 
+ 
+Figure 12. Performance comparison of diﬀerent LoRA rank values across geometry types, 
+showing results with a rank of 8 and alpha value of 16 within the invesƟgated range.   
+Figure 13 demonstrates the eﬀect of training epochs on model performance. Performance tended to 
+stabilise aŌer 3 epochs across most geometry types, which informed our selecƟon of training 
+duraƟon for our dataset. 
+ 
+ 
+Figure 13. Eﬀect of training epochs on performance across diﬀerent geometry types, with 
+performance stabilising around 3 epochs in the tested range. 
+
+Figure 14 illustrates performance across diﬀerent minimum learning rates within our invesƟgated 
+range of 1.0e-06 to 1.0e-04. While variaƟons in performance were modest across this range, our 
+experiments indicated that a learning rate of 1.0e-05 provided consistent results for our speciﬁc 
+training scenarios. 
+ 
+ 
+Figure 14. Performance across diﬀerent minimum learning rates for various geometries, 
+showing results within the invesƟgated range of 1.0e-05 to 1.0e-04. 
+ 
+4.3 Performance aŌer Fine-Tuning 
+The ﬁne-tuning process produced remarkable improvements, parƟcularly in the smaller models, 
+demonstraƟng the eﬀecƟveness of domain-speciﬁc training (Table 6). 
+Table 6. Comprehensive table showing all scores across the seven geometries for four LLMs before 
+ﬁne tuning. 
+ 
+
+Phi-3 Mini 
+The most dramaƟc improvement was observed in Phi-3 Mini, which achieved perfect scores (60/60) 
+across all geometries aŌer ﬁne-tuning. The model demonstrated consistent performance across all 
+evaluaƟon criteria and successfully handled complex geometries like bent pipes and I-beams. This 
+remarkable improvement from baseline scores as low as 5/60 highlighted the potenƟal of targeted 
+training for specialised tasks. 
+Qwen-2.5 1.5B 
+Qwen-2.5 1.5B also showed substanƟal improvements following ﬁne-tuning, achieving perfect scores 
+(60/60) for rectangles, circles, and bent pipes. The model demonstrated strong performance (50/60) 
+for squares and pipes, though some limitaƟons remained with I-beams (30/60). These results 
+represented consistent improvement across all geometric shapes, indicaƟng successful adaptaƟon to 
+the specialised domain. While we used the same hyperparameter search methodology across all 
+models, it's worth noƟng that model-speciﬁc opƟmisaƟon might yield further improvements; the 
+slightly uneven performance across geometry types could reﬂect the transfer of hyperparameters 
+iniƟally tuned on a diﬀerent architecture. 
+Qwen-2.5 14B 
+InteresƟngly, Qwen-2.5 14B showed mixed results aŌer ﬁne-tuning. While it maintained strong 
+performance on basic geometries (55/60 for squares and rectangles), it showed decreased 
+performance on some shapes compared to baseline. The model achieved consistent scores (30/60) 
+across more complex geometries but demonstrated ongoing challenges with parameter matching in 
+complex shapes (Figure 15). This unexpected paƩern suggested that larger models might not always 
+beneﬁt proporƟonally from ﬁne-tuning. 
+ 
+Figure 15. The visual representaƟon of the square (a), rectangle (b), circle (c), semi-circle (d), I-beam 
+(e), pipe (f) and bent pipe (g) geometries aŌer ﬁne tuning Qwen-2.5-14B. 
+ 
+4.4 Geometries with MulƟple Bodies  
+ 
+The ﬁne-tuned small LLMs (Phi-3 Mini and Qwen-2.5 1.5B) excelled at single geometry generaƟon 
+but showed limitaƟons with geometries involving combinaƟons of mulƟple bodies. They occasionally 
+merged instrucƟons or omiƩed outputs, requiring separate prompts for opƟmal performance. 
+However, these models were not ﬁne-tuned on examples of combining mulƟple geometries, they 
+were only trained on individual shapes. In contrast, GPT-4o maintained clear separaƟon between 
+diﬀerent geometric outputs, although required some iteraƟve correcƟons (Figure 16-17). 
+‘Circle inside a square’ 
+
+Figure 16. The visual representaƟon output for the mulƟ-geometry prompts-circle inside a square- 
+for Phi-3 Mini (a), Qwen-2.5 1B (b), and GPT-4o (c). 
+ 
+‘Circle next to a square’ 
+Figure 17. The visual representaƟon output for the mulƟ-geometry prompts-circle next to a square- 
+for Phi-3 Mini (a), Qwen-2.5 1B (b), and GPT-4o (c). 
+ 
+In terms of performance across diﬀerent tasks, our ﬁne-tuned small models excelled at generaƟng 
+individual geometries—even complex ones like bent pipes that GPT-4o struggled with. However, GPT-
+4o demonstrated superior ability to handle instrucƟons involving mulƟple separate geometries (such 
+as creaƟng both a square and circle in the same prompt), a capability our ﬁne-tuned models lacked 
+despite their experƟse with individual shapes. This highlights how ﬁne-tuning can create specialised 
+experƟse for speciﬁc tasks while potenƟally limiƟng ﬂexibility for tasks outside the training 
+distribuƟon. 
+ 
+5. Conclusions 
+Our research demonstrates that ﬁne-tuned small language models can achieve remarkable precision 
+in specialised engineering tasks. The performance of Phi-3 Mini and Qwen-2.5 1.5B in generaƟng 
+GMSH-compliant geometries surpassed non-ﬁne-tuned large LLMs, with both models achieving 
+perfect or near-perfect scores across mulƟple evaluaƟon criteria aŌer ﬁne-tuning. This excellence in 
+single-task geometry generaƟon stands in marked contrast to the behaviour of larger models like 
+
+GPT-4o, which oŌen required mulƟple iteraƟons and error correcƟons to produce comparable 
+results. 
+While Qwen-2.5 14B has more parameters, it showed inferior performance compared to its smaller 
+1.5B counterpart, parƟcularly in handling complex geometries. This unexpected result suggests that 
+our understanding of how model scale interacts with domain-speciﬁc training remains incomplete 
+and warrants further invesƟgaƟon. 
+The performance paƩerns observed raise intriguing quesƟons about the nature of geometric 
+understanding in language models. While the ﬁne-tuned small LLMs demonstrated impressive 
+generalisaƟon to various geometric conﬁguraƟons, the disƟncƟon between genuine geometric 
+comprehension and sophisƟcated paƩern replicaƟon remains unclear. However, from a pracƟcal 
+engineering perspecƟve, the consistent producƟon of error-free, GMSH-compliant outputs 
+represents a signiﬁcant advancement in automated design workﬂows. 
+Despite their strong performance in single-geometry tasks, our research revealed important 
+limitaƟons in the capabiliƟes of ﬁne-tuned small LLMs. The models' performance degraded notably 
+when handling mulƟple geometries in a single prompt, oŌen resulƟng in merged instrucƟons or 
+incomplete outputs.  This limitaƟon likely stems from our ﬁne-tuning dataset design, which focused 
+exclusively on single-geometry examples. Without exposure to mulƟ-body scenarios during training, 
+the models lacked the contextual understanding needed to properly separate and process mulƟple 
+geometric instrucƟons within one prompt. This suggests that while specialised ﬁne-tuning can 
+dramaƟcally improve performance on targeted tasks, the models remain constrained by the scope of 
+their training data distribuƟon. 
+This research demonstrates that strategic ﬁne-tuning of small language models represents a viable 
+and eﬃcient approach to automaƟng specialised engineering tasks. The excepƟonal performance of 
+ﬁne-tuned small LLMs in generaƟng precise, GMSH-compliant geometries suggests that this 
+approach could signiﬁcantly streamline engineering workﬂows. Rather than pursuing ever-larger 
+models, focusing on targeted ﬁne-tuning of smaller, more eﬃcient architectures may oﬀer a more 
+pracƟcal path forward for industrial applicaƟons of AI in engineering design. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+6. References  
+Abdin, M., Aneja, J., Awadalla, H., et al. (2024) Phi-3 Technical Report: A Highly Capable Language 
+Model Locally on Your Phone. 
+Alexiadis, A. and Ghiassi, B. (2024) From text to tech: Shaping the future of physics-based simulaƟons 
+with AI-driven generaƟve models. Results in Engineering, 21. doi:10.1016/j.rineng.2023.101721. 
+Alrashedy, K., Tambwekar, P ., Zaidi, Z., et al. (2024) GeneraƟng CAD Code with Vision-Language 
+Models for 3D Designs. 
+ANSYS, Inc. (2024) ANSYS® . 
+Brown, T.B., Mann, B., Ryder, N., et al. (2020) Language Models are Few-Shot Learners. 
+Buƫ ng, A., Eikermann, R., Hölldobler, K., et al. (2020) A Library of Literals, Expressions, Types, and 
+Statements for ComposiƟonal Language Design. The Journal of Object Technology, 19 (3): 3:1. 
+doi:10.5381/jot.2020.19.3.a4. 
+Carta, S. (2020) Machine Learning and ComputaƟonal Design. Available at: hƩp://ubiquity.acm.org. 
+COMSOL AB (2024) COMSOL MulƟphysics® . 
+DeƩmers, T., Pagnoni, A., Holtzman, A., et al. (2023) QLoRA: Eﬃcient Finetuning of QuanƟzed LLMs. 
+Filippi, S. and Motyl, B. (2024a) Large Language Models (LLMs) in Engineering EducaƟon: A 
+SystemaƟc Review and SuggesƟons for PracƟcal AdopƟon. InformaƟon (Switzerland), 15 (6). 
+doi:10.3390/info15060345. 
+Filippi, S. and Motyl, B. (2024b) Large Language Models (LLMs) in Engineering EducaƟon: A 
+SystemaƟc Review and SuggesƟons for PracƟcal AdopƟon. InformaƟon, 15 (6): 345. 
+doi:10.3390/info15060345. 
+Gaydamaka, K. (2019) Archimate-Based Approach to Requirements Engineering. InternaƟonal 
+Journal of MathemaƟcal, Engineering and Management Sciences, 4 (4): 841–850. 
+doi:10.33889/IJMEMS.2019.4.4-066. 
+Geuzaine, C. and Remacle, J.-F. (2009) Gmsh: a three-dimensional ﬁnite element mesh generator with 
+built-in pre-and post-processing faciliƟes. 
+Gu, J., Tresp, V. and Qin, Y . (2022) Are Vision Transformers Robust to Patch PerturbaƟons? In pp. 404–
+421. doi:10.1007/978-3-031-19775-8_24. 
+Han, Z., Gao, C., Liu, J., et al. (2024a) Parameter-Eﬃcient Fine-Tuning for Large Models: A 
+Comprehensive Survey. 
+Han, Z., Gao, C., Liu, J., et al. (2024b) Parameter-Eﬃcient Fine-Tuning for Large Models: A 
+Comprehensive Survey. Available at: hƩp://arxiv.org/abs/2403.14608. 
+Hu, E.J., Shen, Y ., Wallis, P ., et al. (2021) LoRA: Low-Rank AdaptaƟon of Large Language Models. 
+Kumar, V., Gleyzer, L., Kahana, A., et al. (2023) MyCrunchGPT: A chatGPT assisted framework for 
+scienƟﬁc machine learning. Available at: hƩp://arxiv.org/abs/2306.15551. 
+Lightning AI (2023) LitGPT. Available at: hƩps://github.com/Lightning-AI/litgpt. 
+Menick, J., Trebacz, M., Mikulik, V., et al. (2022) Teaching language models to support answers with 
+veriﬁed quotes. Available at: hƩp://arxiv.org/abs/2203.11147. 
+Open AI (2024) GPT-4o System Card. 
+Qwen Team (2025) Qwen2.5 Technical Report Qwen Team. Available at: 
+hƩps://huggingface.co/QwenhƩps://modelscope.cn/organizaƟon/qwenhƩps://github.com/QwenLM
+/Qwen2.5. 
+Sanghi, A., Jayaraman, P .K., Rampini, A., et al. (2023) Sketch-A-Shape: Zero-Shot Sketch-to-3D Shape 
+GeneraƟon. IEEE InternaƟonal Conference on Computer Vision (ICCV) 2023. 
+Sweller, J., van Merriënboer, J.J.G. and Paas, F. (2019) CogniƟve Architecture and InstrucƟonal Design: 
+20 Years Later. EducaƟonal Psychology Review. 31 (2) pp. 261–292. doi:10.1007/s10648-019-09465-
+5. 
+Wu, R., Xiao, C. and Zheng, C. (2021) “DeepCAD: A Deep GeneraƟve Network for Computer-Aided 
+Design Models.” In 2021 IEEE/CVF InternaƟonal Conference on Computer Vision (ICCV). October 
+2021. IEEE. pp. 6752–6762. doi:10.1109/ICCV48922.2021.00670. 
+Wu, S., Khasahmadi, A., Katz, M., et al. (2023) CAD-LLM: Large Language Model for CAD GeneraƟon. 
+Conference on Neural InformaƟon Processing Systems 2023. 
+Yang, S., Ali, Z. and Wong, B. (2023) FLUID-GPT (Fast Learning to Understand and InvesƟgate 
+Dynamics with a GeneraƟve Pre-Trained Transformer): Eﬃcient PredicƟons of ParƟcle Trajectories 
+and Erosion. doi:10.26434/chemrxiv-2023-ppk9s. 
+Zhong, R., Du, X., Kai, S., et al. (2023) LLM4EDA: Emerging Progress in Large Language Models for 
+Electronic Design AutomaƟon. 
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+7. Appendix 
+1. Appendix 1: Fine-Tuning Guide 
+Fine-Tuning Guide for Geometric Script Generation 
+This guide provides step-by-step instructions for fine-tuning language models to generate GMSH 
+geometric scripts. Below is a guide for Phi-3-mini, but the approach works with other models. 
+Prerequisites 
+ Python 3.8+ 
+ PyTorch 2.0+ 
+ CUDA-compatible GPU (Linux recommended) 
+ LitGPT framework (pip install litgpt) 
+ 
+Step 1: Select a Model 
+List available models: 
+ 
+ 
+Step 2: Prepare your Dataset 
+Create a JSON file with instruction-output pairs: 
+ 
+Step 3: Download Model Weights 
+ 
+Step 4: Choose Fine-Tuning Method 
+Standard LoRA (24GB+ GPU memory) 
+ 
+QLoRA (8GB+ GPU memory) 
+For memory-constrained setups, use quantisation: 
+
+ 
+Available quantisation methods: 
+ bnb.nf4 - Normalised float 4 (recommended, ~5.7GB for 7B model) 
+ bnb.nf4-dq - NF4 with double quantisation (~5.4GB) 
+ bnb.fp4 - Pure FP4 quantisation (~5.7GB) 
+ bnb.fp4-dq - FP4 with double quantisation (~5.4GB) 
+ bnb.int8 - 8-bit quantisation (~8.7GB) 
+ 
+Recommended Hyperparameters 
+Based on our systematic experiments, we recommend: 
+ LoRA rank (r): 8 (with α=16) 
+ Training epochs: 3 
+ Minimum learning rate: 1.0e-05 
+ 
+Hyperparameter Tuning Guide 
+If you need to optimise for your specific dataset: 
+LoRA Rank 
+Controls adaptation capacity: 
+ 
+ Lower ranks (r=4): Works for simple geometries, less compute  
+ Higher ranks (r=16): May help with very complex geometries  
+ In our experiments, setting α to approximately 2×r worked well 
+ 
+ 1 epoch: Often insufficient for complex geometries  
+ 5 epochs: Risk of overfitting, rarely beneficial 
+Learning Rate 
+Controls adaptation speed: 
+ 
+ Medium (6e-5): Reasonable but may underfit  
+
+ Higher (1e-4): Faster convergence, may destabilise training 
+ 
+Step 5: Test your Model 
+ 
+ 
+ 
+ 
+ 
+
